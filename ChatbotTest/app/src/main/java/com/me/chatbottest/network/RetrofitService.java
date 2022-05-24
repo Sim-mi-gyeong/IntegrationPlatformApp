@@ -17,7 +17,7 @@ import retrofit2.http.Part;
 public interface RetrofitService {
 
     @Multipart
-    @POST("/request/")
+    @POST("/request")
     Call<ResponseBody> sendAudio(@Part MultipartBody.Part files);
 //    Call<VideoResponse> sendAudio(@Body AudioData recorderData);
 }

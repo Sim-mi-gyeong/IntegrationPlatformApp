@@ -2,12 +2,15 @@ package com.me.chatbottest.ui;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.MediaController;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -21,6 +24,7 @@ import com.me.chatbottest.network.RetrofitClient;
 import com.me.chatbottest.network.RetrofitService;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +43,8 @@ public class MainActivity3 extends AppCompatActivity {
 
     private RetrofitService retrofitService;
     private String targetPath;
+    private VideoView videoView;
+    private MediaController mediaController;
 
     private Button startBtn;
     private Button stopBtn;
@@ -82,6 +88,8 @@ public class MainActivity3 extends AppCompatActivity {
         startBtn = findViewById(R.id.startButton);
         stopBtn = findViewById(R.id.stopButton);
         submitBtn = findViewById(R.id.submitButton);
+        videoView = findViewById(R.id.videoView);
+        mediaController = new MediaController(this);
 
         startBtn.setOnClickListener(v -> {
             if(checkWritePermission()) {
@@ -130,11 +138,28 @@ public class MainActivity3 extends AppCompatActivity {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
 //            public void onResponse(Call<VideoResponse> call, Response<VideoResponse> response)
                 ResponseBody result = response.body();
-                Log.d("RESULT : ", result.toString());
-                Toast.makeText(getApplicationContext(), String.valueOf(result), Toast.LENGTH_SHORT).show();
+//                Log.d("RESULT : ", result.toString());
+//                Toast.makeText(getApplicationContext(), String.valueOf(result), Toast.LENGTH_SHORT).show();
 
-                if (response.isSuccessful()) {
+                if (result != null && response.isSuccessful()) {
+                    Log.d("RESULT ", result.toString());
+//                    try {
+//                        Log.d("RESULT to string", result.string());
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
                     Log.d("요청", "전송 완료");
+
+                    // TODO Response 받은 mp4 를 videoView 로 재생
+                    Uri uri = Uri.parse(String.valueOf(result));
+                    videoView.setVideoURI(uri);
+                    //비디오 컨트롤바
+                    videoView.setMediaController(mediaController);
+                    videoView.setVideoURI(uri);
+                    videoView.requestFocus();
+                    videoView.start();
+
+
                 } else {
                     Log.d("요청","Post Status Code : " + response.code());
                     Log.d("요청", response.errorBody().toString());
@@ -144,7 +169,6 @@ public class MainActivity3 extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(getApplicationContext(), "전송 실패", Toast.LENGTH_SHORT).show();
                 Log.d("요청", t.getMessage());
             }
         });
