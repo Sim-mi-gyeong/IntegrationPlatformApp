@@ -6,11 +6,22 @@ import android.media.MediaRecorder;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.me.chatbottest.data.AudioData;
+import com.me.chatbottest.data.VideoResponse;
+import com.me.chatbottest.network.RetrofitService;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class WavClass {
+
+    private RetrofitService retrofitService;
+    private String targetFilePath;
 
     String filePath = null;
     String tempRawFile = "temp_record.raw";
@@ -146,7 +157,7 @@ public class WavClass {
         try{
             recorder = new AudioRecord(MediaRecorder.AudioSource.MIC,sampleRate,channel,audioEncoding, bufferSize);
             int status = recorder.getState();
-            if(status == 1){
+            if(status == 1) {
                 recorder.startRecording();
                 isRecording = true;
             }
@@ -157,7 +168,7 @@ public class WavClass {
             e.printStackTrace();
         }
     }
-    public void stopRecording(){
+    public String stopRecording(){
         try{
             if(recorder != null) {
                 isRecording = false;
@@ -168,11 +179,17 @@ public class WavClass {
                 recorder.release();
                 recordingThread = null;
                 createWavFile(getPath(tempRawFile), getPath(tempWavFile));
-                Log.v("저장", getPath(tempRawFile) + getPath(tempWavFile));
+                Log.v("저장", " raw 파일 : "  +getPath(tempRawFile) + " wav 파일 : "  + getPath(tempWavFile));
+
+                targetFilePath = getPath(tempWavFile);
+
             }
         }
         catch (Exception e){
             e.printStackTrace();
         }
+
+        return targetFilePath;
     }
+
 }
