@@ -2,6 +2,7 @@ package com.me.chatbottest.ui;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,8 +24,14 @@ import com.me.chatbottest.data.VideoResponse;
 import com.me.chatbottest.network.RetrofitClient;
 import com.me.chatbottest.network.RetrofitService;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +56,7 @@ public class MainActivity3 extends AppCompatActivity {
     private Button startBtn;
     private Button stopBtn;
     private Button submitBtn;
+    private Button playBtn;
     private final String rootPath = Environment.getExternalStorageDirectory().getPath() + "/Music/";
 //    private final String dirPath = "ChatBotRecord/";
     private final String dirPath = "ChatBotRecord";
@@ -88,6 +96,7 @@ public class MainActivity3 extends AppCompatActivity {
         startBtn = findViewById(R.id.startButton);
         stopBtn = findViewById(R.id.stopButton);
         submitBtn = findViewById(R.id.submitButton);
+        playBtn = findViewById(R.id.playButton);
         videoView = findViewById(R.id.videoView);
         mediaController = new MediaController(this);
 
@@ -108,6 +117,9 @@ public class MainActivity3 extends AppCompatActivity {
             public void onClick(View v) {
                 // 서버 전송
                 sendAudio();
+
+
+
             }
         });
 
@@ -143,22 +155,35 @@ public class MainActivity3 extends AppCompatActivity {
 
                 if (result != null && response.isSuccessful()) {
                     Log.d("RESULT ", result.toString());
-//                    try {
-//                        Log.d("RESULT to string", result.string());
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
+
                     Log.d("요청", "전송 완료");
 
-                    // TODO Response 받은 mp4 를 videoView 로 재생
-                    Uri uri = Uri.parse(String.valueOf(result));
-                    videoView.setVideoURI(uri);
-                    //비디오 컨트롤바
-                    videoView.setMediaController(mediaController);
-                    videoView.setVideoURI(uri);
-                    videoView.requestFocus();
-                    videoView.start();
+                    boolean writtenToDisk = writeResponseBodyToDisk(response.body());
+                    Log.d("응답", "file download was a success? " + writtenToDisk);
 
+                    long contentLength = result.contentLength();
+
+                    Log.d("응답", "길이 : " + contentLength + " " + "타입 : " + String.valueOf(result.contentType()));
+                    Log.d("응답", "source : " + result.source().toString());
+                    Log.d("응답", "className : " + result.getClass().getName());   // okhttp3.ResponseBody$1
+
+
+                    InputStream ins = result.byteStream();
+                    int size;
+                    byte[] b = new byte[1024];
+                    OutputStream out = null;
+
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(ins));
+                    StringBuffer stringBuffer = new StringBuffer();
+                    BufferedInputStream input = new BufferedInputStream(ins);
+
+//                    OutputStream output = new FileOutputStream(ins)
+                    // TODO Response 받은 mp4 를 videoView 로 재생 -> 메인 스레드에서 생성한 핸들러로 처리해야함
+//                    Uri uri = Uri.parse(String.valueOf(result));
+//                    videoView.setMediaController(mediaController);
+//                    videoView.setVideoURI(uri);
+//                    videoView.requestFocus();
+//                    videoView.start();
 
                 } else {
                     Log.d("요청","Post Status Code : " + response.code());
@@ -172,5 +197,83 @@ public class MainActivity3 extends AppCompatActivity {
                 Log.d("요청", t.getMessage());
             }
         });
+    }
+
+    private boolean writeResponseBodyToDisk(ResponseBody body) {
+        try {
+            // todo change the file location/name according to your needs
+//            File futureStudioIconFile = new File(getExternalFilesDir(null) + File.separator + "movie.mp4");
+            File futureStudioIconFile = new File(rootDirPath + File.separator + "movie.mp4");
+
+            InputStream inputStream = null;
+            OutputStream outputStream = null;
+
+            try {
+                byte[] fileReader = new byte[4096];
+
+                long fileSize = body.contentLength();
+                long fileSizeDownloaded = 0;
+
+                inputStream = body.byteStream();
+                outputStream = new FileOutputStream(futureStudioIconFile);
+
+                while (true) {
+                    int read = inputStream.read(fileReader);
+
+                    if (read == -1) {
+                        break;
+                    }
+
+                    outputStream.write(fileReader, 0, read);
+
+                    fileSizeDownloaded += read;
+
+                    Log.d("응답", "file download: " + fileSizeDownloaded + " of " + fileSize);
+                }
+
+                outputStream.flush();
+
+                // TODO 다운로드 완료 후 재생
+               playVideo();
+
+                return true;
+            } catch (IOException e) {
+                return false;
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private void playVideo() {
+        String url = rootDirPath + "/movie.mp4";
+
+        videoView.setMediaController(mediaController);
+        videoView.setVideoURI(Uri.parse(url));
+        videoView.requestFocus();
+
+        videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                Toast.makeText(getApplicationContext(), "동영상 준비 완료", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        playBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                videoView.seekTo(0);
+                videoView.start();
+            }
+        });
+
     }
 }

@@ -9,14 +9,19 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:layout_marginTop="20dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="vertical">
 
         <VideoView
             android:id="@+id/videoView"
             android:layout_width="250dp"
             android:layout_height="250dp">
-
         </VideoView>
+        <Button
+            android:id="@+id/playButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="재생"/>
 
     </LinearLayout>
 
