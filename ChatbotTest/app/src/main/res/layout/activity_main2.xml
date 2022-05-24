@@ -8,6 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
+        android:layout_marginTop="20dp"
         android:layout_weight="1">
 
         <VideoView
@@ -22,16 +23,55 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="20dp"
         android:layout_weight="1">
 
-        <TextView
-            android:id="@+id/textView"
+<!--        <TextView-->
+<!--            android:id="@+id/textView"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent">-->
+<!--        </TextView>-->
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
-        </TextView>
+            <ImageView
+                android:layout_width="200dp"
+                android:layout_height="200dp"
 
+                android:src="@drawable/chat_image2"></ImageView>
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="50dp">
+
+            <Button
+                android:id="@+id/startButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginLeft="80dp"
+                android:layout_marginRight="20dp"
+                android:layout_weight="1"
+                android:text="녹음 시작" />
+
+            <Button
+                android:id="@+id/stopButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="80dp"
+                android:layout_weight="1"
+                android:text="녹음 종료" />
+
+        </LinearLayout>
 
 
     </LinearLayout>

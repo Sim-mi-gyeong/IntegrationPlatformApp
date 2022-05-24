@@ -18,9 +18,8 @@ allprojects {
         mavenCentral()
         jcenter()
 //        jcenter() // Warning: this repository is going to shut down soon
-//        https://github.com/kailash09dabhi/OmRecorder.git
 //        maven { url "https://maven.google.com" }
-//        maven { url "https://jitpack.io"}
+        maven { url "https://jitpack.io"}
     }
 }
 

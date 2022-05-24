@@ -1,4 +1,4 @@
-package com.me.chatbottest;
+package com.me.chatbottest.ui;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -19,6 +19,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.me.chatbottest.R;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +46,7 @@ public class MainActivity2 extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2);
+        setContentView(R.layout.activity_main3);
 
         // Check if permission is granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
