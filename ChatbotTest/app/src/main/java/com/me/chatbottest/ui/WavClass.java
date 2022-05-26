@@ -24,8 +24,9 @@ public class WavClass {
     private String targetFilePath;
 
     String filePath = null;
-    String tempRawFile = "temp_record.raw";
+    String tempRawFile = "temp_record.raw";   // 덮어쓰기
     String tempWavFile = "final_record.wav";
+
     final int bpp = 16;
     int sampleRate = 44100;
     int channel = AudioFormat.CHANNEL_IN_STEREO;
@@ -179,8 +180,7 @@ public class WavClass {
                 recorder.release();
                 recordingThread = null;
                 createWavFile(getPath(tempRawFile), getPath(tempWavFile));
-                Log.v("저장", " raw 파일 : "  +getPath(tempRawFile) + " wav 파일 : "  + getPath(tempWavFile));
-
+                
                 targetFilePath = getPath(tempWavFile);
 
             }

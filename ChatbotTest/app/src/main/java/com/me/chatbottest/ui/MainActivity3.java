@@ -6,8 +6,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.MediaController;
 import android.widget.Toast;
@@ -17,10 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.gson.JsonObject;
 import com.me.chatbottest.R;
-import com.me.chatbottest.data.AudioData;
-import com.me.chatbottest.data.VideoResponse;
 import com.me.chatbottest.network.RetrofitClient;
 import com.me.chatbottest.network.RetrofitService;
 
@@ -33,7 +30,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import okhttp3.MediaType;
@@ -55,17 +51,20 @@ public class MainActivity3 extends AppCompatActivity {
 
     private Button startBtn;
     private Button stopBtn;
-    private Button submitBtn;
-    private Button playBtn;
+
     private final String rootPath = Environment.getExternalStorageDirectory().getPath() + "/Music/";
-//    private final String dirPath = "ChatBotRecord/";
     private final String dirPath = "ChatBotRecord";
     private final String rootDirPath = rootPath + dirPath;
+    private String videoName;   // 서버에서 전송받은 영상 저장 이름
+    private String saveVideoPath;   // 서버에서 전송받은 영상 저장 경로
+    private String url;   // 서버에서 전송받은 영상 저장 경로
+
+    Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2);
+        setContentView(R.layout.activity_main4);
 
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, MODE_PRIVATE);
 
@@ -83,25 +82,26 @@ public class MainActivity3 extends AppCompatActivity {
             // ChatBotRecord 디렉토리 생성
             File folder = new File(rootDirPath);
             try {
-                folder.mkdir();   // 디렉토리 생성
+                folder.mkdir();
                 Toast.makeText(getApplicationContext(), "ChatBotRecord 디렉토리 생성", Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
                 e.getStackTrace();
             }
         }
 
+        // TODO Retrofit 객체 생성
         retrofitService = RetrofitClient.getClient().create(RetrofitService.class);
 
         WavClass wavObj = new WavClass(rootDirPath);
         startBtn = findViewById(R.id.startButton);
         stopBtn = findViewById(R.id.stopButton);
-        submitBtn = findViewById(R.id.submitButton);
-        playBtn = findViewById(R.id.playButton);
+
         videoView = findViewById(R.id.videoView);
         mediaController = new MediaController(this);
 
         startBtn.setOnClickListener(v -> {
             if(checkWritePermission()) {
+
                 wavObj.startRecording();
             }
             if(!checkWritePermission()){
@@ -110,17 +110,10 @@ public class MainActivity3 extends AppCompatActivity {
         });
 
         // TODO 녹음 종료 및 저장 -> 저장된 음성 파일 가져와서 -> 서버 전송
-        stopBtn.setOnClickListener(v -> targetPath = wavObj.stopRecording());
-
-        submitBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // 서버 전송
-                sendAudio();
-
-
-
-            }
+        stopBtn.setOnClickListener(v -> {
+                    targetPath = wavObj.stopRecording();
+                    // TODO 서버 전송
+                    sendAudio();
         });
 
     }
@@ -138,35 +131,30 @@ public class MainActivity3 extends AppCompatActivity {
     private void sendAudio() {
 
         File file = new File(targetPath);
-        Log.v("전송할 파일", targetPath);
         RequestBody requestFile = RequestBody.create(MediaType.parse("audio/*"), file);
-        Log.v("전송할 파일 RequestBody ", String.valueOf(requestFile));
         MultipartBody.Part uploadFile = MultipartBody.Part.createFormData("files", file.getPath(), requestFile);
-        Log.v("전송할 파일 uploadFile ", String.valueOf(uploadFile));
 
-        // enqueue()에 파라미터로 넘긴 콜백 - 통신이 성공/실패 했을 때 수행할 동작을 재정의
+        // TODO enqueue()에 파라미터로 넘긴 콜백 - 통신이 성공/실패 했을 때 수행할 동작을 재정의
         retrofitService.sendAudio(uploadFile).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-//            public void onResponse(Call<VideoResponse> call, Response<VideoResponse> response)
                 ResponseBody result = response.body();
-//                Log.d("RESULT : ", result.toString());
 //                Toast.makeText(getApplicationContext(), String.valueOf(result), Toast.LENGTH_SHORT).show();
 
                 if (result != null && response.isSuccessful()) {
-                    Log.d("RESULT ", result.toString());
-
                     Log.d("요청", "전송 완료");
 
+                    // TODO 서버에서 응답으로 받은 영상 저장(다운로드)
                     boolean writtenToDisk = writeResponseBodyToDisk(response.body());
+
+                    if (writtenToDisk) {
+                        // TODO writeResponseBodyToDisk() 가 return True 면 -> 다운로드 완료 후 영상 재생
+                        playVideo();
+                    }
+
                     Log.d("응답", "file download was a success? " + writtenToDisk);
 
                     long contentLength = result.contentLength();
-
-                    Log.d("응답", "길이 : " + contentLength + " " + "타입 : " + String.valueOf(result.contentType()));
-                    Log.d("응답", "source : " + result.source().toString());
-                    Log.d("응답", "className : " + result.getClass().getName());   // okhttp3.ResponseBody$1
-
 
                     InputStream ins = result.byteStream();
                     int size;
@@ -177,7 +165,6 @@ public class MainActivity3 extends AppCompatActivity {
                     StringBuffer stringBuffer = new StringBuffer();
                     BufferedInputStream input = new BufferedInputStream(ins);
 
-//                    OutputStream output = new FileOutputStream(ins)
                     // TODO Response 받은 mp4 를 videoView 로 재생 -> 메인 스레드에서 생성한 핸들러로 처리해야함
 //                    Uri uri = Uri.parse(String.valueOf(result));
 //                    videoView.setMediaController(mediaController);
@@ -185,10 +172,6 @@ public class MainActivity3 extends AppCompatActivity {
 //                    videoView.requestFocus();
 //                    videoView.start();
 
-                } else {
-                    Log.d("요청","Post Status Code : " + response.code());
-                    Log.d("요청", response.errorBody().toString());
-                    Log.d("요청",call.request().body().toString());
                 }
             }
 
@@ -202,8 +185,11 @@ public class MainActivity3 extends AppCompatActivity {
     private boolean writeResponseBodyToDisk(ResponseBody body) {
         try {
             // todo change the file location/name according to your needs
-//            File futureStudioIconFile = new File(getExternalFilesDir(null) + File.separator + "movie.mp4");
-            File futureStudioIconFile = new File(rootDirPath + File.separator + "movie.mp4");
+            // TODO 저장될 경우의 영상 이름 AutoIncrement 로 설정
+//            videoName = System.currentTimeMillis() + ".mp4";
+            videoName = "movie.mp4";
+            saveVideoPath = rootDirPath + File.separator + videoName;
+            File futureStudioIconFile = new File(saveVideoPath);
 
             InputStream inputStream = null;
             OutputStream outputStream = null;
@@ -225,16 +211,14 @@ public class MainActivity3 extends AppCompatActivity {
                     }
 
                     outputStream.write(fileReader, 0, read);
-
                     fileSizeDownloaded += read;
 
-                    Log.d("응답", "file download: " + fileSizeDownloaded + " of " + fileSize);
                 }
 
                 outputStream.flush();
 
-                // TODO 다운로드 완료 후 재생
-               playVideo();
+                // TODO writeResponseBodyToDisk() 가 return True 면 -> 다운로드 완료 후 영상 재생
+//                playVideo();
 
                 return true;
             } catch (IOException e) {
@@ -254,7 +238,8 @@ public class MainActivity3 extends AppCompatActivity {
     }
 
     private void playVideo() {
-        String url = rootDirPath + "/movie.mp4";
+
+        url = saveVideoPath;
 
         videoView.setMediaController(mediaController);
         videoView.setVideoURI(Uri.parse(url));
@@ -264,12 +249,8 @@ public class MainActivity3 extends AppCompatActivity {
             @Override
             public void onPrepared(MediaPlayer mp) {
                 Toast.makeText(getApplicationContext(), "동영상 준비 완료", Toast.LENGTH_SHORT).show();
-            }
-        });
 
-        playBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+                // TODO 영상 준비 완료 후 저장
                 videoView.seekTo(0);
                 videoView.start();
             }
