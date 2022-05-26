@@ -180,7 +180,7 @@ public class WavClass {
                 recorder.release();
                 recordingThread = null;
                 createWavFile(getPath(tempRawFile), getPath(tempWavFile));
-                
+
                 targetFilePath = getPath(tempWavFile);
 
             }
