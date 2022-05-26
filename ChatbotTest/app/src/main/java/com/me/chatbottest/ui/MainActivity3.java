@@ -154,16 +154,16 @@ public class MainActivity3 extends AppCompatActivity {
 
                     Log.d("응답", "file download was a success? " + writtenToDisk);
 
-                    long contentLength = result.contentLength();
-
-                    InputStream ins = result.byteStream();
-                    int size;
-                    byte[] b = new byte[1024];
-                    OutputStream out = null;
-
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(ins));
-                    StringBuffer stringBuffer = new StringBuffer();
-                    BufferedInputStream input = new BufferedInputStream(ins);
+//                    long contentLength = result.contentLength();
+//
+//                    InputStream ins = result.byteStream();
+//                    int size;
+//                    byte[] b = new byte[1024];
+//                    OutputStream out = null;
+//
+//                    BufferedReader reader = new BufferedReader(new InputStreamReader(ins));
+//                    StringBuffer stringBuffer = new StringBuffer();
+//                    BufferedInputStream input = new BufferedInputStream(ins);
 
                     // TODO Response 받은 mp4 를 videoView 로 재생 -> 메인 스레드에서 생성한 핸들러로 처리해야함
 //                    Uri uri = Uri.parse(String.valueOf(result));

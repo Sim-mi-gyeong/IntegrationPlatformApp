@@ -3,20 +3,12 @@ package com.me.chatbottest.ui;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.util.Log;
-import android.widget.Toast;
 
-import com.me.chatbottest.data.AudioData;
-import com.me.chatbottest.data.VideoResponse;
 import com.me.chatbottest.network.RetrofitService;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class WavClass {
 
