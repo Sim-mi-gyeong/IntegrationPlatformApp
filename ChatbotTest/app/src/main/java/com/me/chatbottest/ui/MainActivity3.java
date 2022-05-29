@@ -7,8 +7,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.text.Editable;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.MediaController;
 import android.widget.Toast;
 import android.widget.VideoView;
@@ -51,11 +54,14 @@ public class MainActivity3 extends AppCompatActivity {
 
     private Button startBtn;
     private Button stopBtn;
+    private Button submitBtn;
+    private EditText editText;
 
     private final String rootPath = Environment.getExternalStorageDirectory() + "/Download/";
 //    private final String rootPath = Environment.getExternalStorageDirectory() + "/Movies/";
-    private final String dirPath = "ChatBotRecord";
+    private final String dirPath = "ChatBotRecord2";
     private final String rootDirPath = rootPath + dirPath;
+//    private final String rootDirPath = rootPath;
     private String videoName;   // 서버에서 전송받은 영상 저장 이름
     private String saveVideoPath;   // 서버에서 전송받은 영상 저장 경로
     private String url;   // 서버에서 전송받은 영상 저장 경로
@@ -96,6 +102,8 @@ public class MainActivity3 extends AppCompatActivity {
         WavClass wavObj = new WavClass(rootDirPath);
         startBtn = findViewById(R.id.startButton);
         stopBtn = findViewById(R.id.stopButton);
+        submitBtn = findViewById(R.id.submitButton);
+        editText = findViewById(R.id.editText);
 
         videoView = findViewById(R.id.videoView);
         mediaController = new MediaController(this);
@@ -118,6 +126,16 @@ public class MainActivity3 extends AppCompatActivity {
                     sendAudio();
         });
 
+        // TODO EditText 로 파일명 입력받아 -> 서버 전송
+        submitBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String fileText = String.valueOf(editText.getText());
+                targetPath = rootDirPath + "/" + fileText + ".wav";
+                sendAudio();
+            }
+        });
+
     }
 
     private boolean checkWritePermission() {
@@ -132,10 +150,11 @@ public class MainActivity3 extends AppCompatActivity {
 
     private void sendAudio() {
 
-        String target = rootDirPath + "/final_record.wav";
-        Log.d("target 경로", target);
-//        File file = new File(targetPath);
-        File file = new File(target);
+//        String target = rootDirPath + "/final_record.wav";
+//        Log.d("target 경로", target);
+//        File file = new File(target);
+        Log.d("targetPath 경로", targetPath);
+        File file = new File(targetPath);
         RequestBody requestFile = RequestBody.create(MediaType.parse("audio/*"), file);
         MultipartBody.Part uploadFile = MultipartBody.Part.createFormData("files", file.getPath(), requestFile);
 
@@ -159,16 +178,6 @@ public class MainActivity3 extends AppCompatActivity {
 
                     Log.d("응답", "file download was a success? " + writtenToDisk);
 
-//                    long contentLength = result.contentLength();
-//
-//                    InputStream ins = result.byteStream();
-//                    int size;
-//                    byte[] b = new byte[1024];
-//                    OutputStream out = null;
-//
-//                    BufferedReader reader = new BufferedReader(new InputStreamReader(ins));
-//                    StringBuffer stringBuffer = new StringBuffer();
-//                    BufferedInputStream input = new BufferedInputStream(ins);
 
                     // TODO Response 받은 mp4 를 videoView 로 재생 -> 메인 스레드에서 생성한 핸들러로 처리해야함
 //                    Uri uri = Uri.parse(String.valueOf(result));
@@ -225,9 +234,6 @@ public class MainActivity3 extends AppCompatActivity {
                 }
 
                 outputStream.flush();
-
-                // TODO writeResponseBodyToDisk() 가 return True 면 -> 다운로드 완료 후 영상 재생
-//                playVideo();
 
                 return true;
             } catch (IOException e) {

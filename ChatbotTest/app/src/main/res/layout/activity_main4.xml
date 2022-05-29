@@ -14,8 +14,8 @@
 
         <VideoView
             android:id="@+id/videoView"
-            android:layout_width="250dp"
-            android:layout_height="250dp">
+            android:layout_width="400dp"
+            android:layout_height="400dp">
         </VideoView>
 
     </LinearLayout>
@@ -26,18 +26,6 @@
         android:orientation="vertical"
         android:layout_marginTop="20dp"
         android:layout_weight="1">
-
-<!--        <LinearLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content">-->
-
-<!--            <TextView-->
-<!--                android:layout_width="200dp"-->
-<!--                android:layout_height="150dp"-->
-<!--                android:background="@drawable/chat_image2">-->
-<!--            </TextView>-->
-
-<!--        </LinearLayout>-->
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -102,7 +90,7 @@
 
             <Button
                 android:id="@+id/startButton"
-                android:layout_width="wrap_content"
+                android:layout_width="80dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
                 android:layout_marginLeft="80dp"
@@ -112,13 +100,43 @@
 
             <Button
                 android:id="@+id/stopButton"
-                android:layout_width="wrap_content"
+                android:layout_width="80dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="80dp"
                 android:layout_weight="1"
                 android:text="녹음 종료" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal"
+            android:layout_gravity="center">
+
+            <EditText
+                android:id="@+id/editText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="80dp"
+                android:layout_marginRight="20dp"
+                android:layout_gravity="center"
+                android:hint="파일명 입력"
+                android:layout_weight="1"
+                android:ems="6"/>
+
+            <Button
+                android:id="@+id/submitButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="80dp"
+                android:layout_weight="1"
+                android:text="파일 전송" />
 
         </LinearLayout>
 
