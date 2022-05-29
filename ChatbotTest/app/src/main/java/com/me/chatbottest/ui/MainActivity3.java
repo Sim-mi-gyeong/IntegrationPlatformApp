@@ -52,7 +52,8 @@ public class MainActivity3 extends AppCompatActivity {
     private Button startBtn;
     private Button stopBtn;
 
-    private final String rootPath = Environment.getExternalStorageDirectory().getPath() + "/Music/";
+    private final String rootPath = Environment.getExternalStorageDirectory() + "/Download/";
+//    private final String rootPath = Environment.getExternalStorageDirectory() + "/Movies/";
     private final String dirPath = "ChatBotRecord";
     private final String rootDirPath = rootPath + dirPath;
     private String videoName;   // 서버에서 전송받은 영상 저장 이름
@@ -112,6 +113,7 @@ public class MainActivity3 extends AppCompatActivity {
         // TODO 녹음 종료 및 저장 -> 저장된 음성 파일 가져와서 -> 서버 전송
         stopBtn.setOnClickListener(v -> {
                     targetPath = wavObj.stopRecording();
+                    Toast.makeText(getApplicationContext(), targetPath, Toast.LENGTH_SHORT).show();
                     // TODO 서버 전송
                     sendAudio();
         });
@@ -130,7 +132,10 @@ public class MainActivity3 extends AppCompatActivity {
 
     private void sendAudio() {
 
-        File file = new File(targetPath);
+        String target = rootDirPath + "/final_record.wav";
+        Log.d("target 경로", target);
+//        File file = new File(targetPath);
+        File file = new File(target);
         RequestBody requestFile = RequestBody.create(MediaType.parse("audio/*"), file);
         MultipartBody.Part uploadFile = MultipartBody.Part.createFormData("files", file.getPath(), requestFile);
 
@@ -186,9 +191,11 @@ public class MainActivity3 extends AppCompatActivity {
         try {
             // todo change the file location/name according to your needs
             // TODO 저장될 경우의 영상 이름 AutoIncrement 로 설정
-//            videoName = System.currentTimeMillis() + ".mp4";
-            videoName = "movie.mp4";
-            saveVideoPath = rootDirPath + File.separator + videoName;
+            videoName = System.currentTimeMillis() + ".mp4";
+//            videoName = "movie.mp4";
+//            saveVideoPath = rootDirPath + File.separator + videoName;
+            saveVideoPath = Environment.getExternalStorageDirectory() + "/Movies/" + File.separator + videoName;
+            Log.d("saveVideoPath", saveVideoPath);
             File futureStudioIconFile = new File(saveVideoPath);
 
             InputStream inputStream = null;
@@ -201,6 +208,7 @@ public class MainActivity3 extends AppCompatActivity {
                 long fileSizeDownloaded = 0;
 
                 inputStream = body.byteStream();
+                Log.d("inputStream", String.valueOf(inputStream));
                 outputStream = new FileOutputStream(futureStudioIconFile);
 
                 while (true) {
@@ -212,6 +220,7 @@ public class MainActivity3 extends AppCompatActivity {
 
                     outputStream.write(fileReader, 0, read);
                     fileSizeDownloaded += read;
+                    Log.d("응답", "file download: " + fileSizeDownloaded + " of " + fileSize);
 
                 }
 

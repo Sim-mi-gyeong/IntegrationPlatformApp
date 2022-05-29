@@ -3,6 +3,7 @@ package com.me.chatbottest.ui;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.util.Log;
 
 import com.me.chatbottest.network.RetrofitService;
 
@@ -23,6 +24,7 @@ public class WavClass {
     int sampleRate = 44100;
     int channel = AudioFormat.CHANNEL_IN_STEREO;
     int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
+
     AudioRecord recorder = null;
     int bufferSize = 0;
     Thread recordingThread;
@@ -33,7 +35,9 @@ public class WavClass {
 
             filePath = path;
 
-            bufferSize = AudioRecord.getMinBufferSize(8000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+//            bufferSize = AudioRecord.getMinBufferSize(8000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+            // 8000, 11025, 16000, 22050, 32000, 44100 및 48000 Hz
+            bufferSize = AudioRecord.getMinBufferSize(48000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -48,14 +52,20 @@ public class WavClass {
         }
     }
     private void writeRawData(){
+        Log.d("raw 저장1", "raw 저장1");
         try{
             if(filePath != null) {
+                Log.d("raw 저장2", "raw 저장2");
                 byte[] data = new byte[bufferSize];
                 String path = getPath(tempRawFile);
+                Log.d("raw 경로", path);
                 FileOutputStream fileOutputStream = new FileOutputStream(path);
+                Log.d("fileOutputStream 경로", String.valueOf(fileOutputStream));
                 if(fileOutputStream != null){
+                    Log.d("raw 저장3", "raw 저장3");
                     int read;
                     while (isRecording){
+                        Log.d("저장", String.valueOf(fileOutputStream));
                         read = recorder.read(data, 0, bufferSize);
                         if (AudioRecord.ERROR_INVALID_OPERATION != read) {
                             try {
@@ -63,8 +73,12 @@ public class WavClass {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
+                        } else {
+                            Log.d("저장", String.valueOf(fileOutputStream));
                         }
                     }
+                } else {
+                    Log.d("저장", String.valueOf(fileOutputStream));
                 }
                 fileOutputStream.close();
             }
@@ -127,6 +141,7 @@ public class WavClass {
         }
     }
     private void createWavFile(String tempPath, String wavPath){
+        Log.d("녹음 확인 while 전", "녹음 확인 while 전");
         try {
             FileInputStream fileInputStream = new FileInputStream(tempPath);
             FileOutputStream fileOutputStream = new FileOutputStream(wavPath);
@@ -135,8 +150,12 @@ public class WavClass {
             long byteRate = bpp * sampleRate * channels / 8;
             long totalAudioLen = fileInputStream.getChannel().size();
             long totalDataLen = totalAudioLen + 36;
+
             wavHeader(fileOutputStream,totalAudioLen,totalDataLen,channels,byteRate);
+
+            Log.d("녹음 확인 while 전", String.valueOf(fileInputStream.read(data)));
             while (fileInputStream.read(data) != -1) {
+                Log.d("녹음 확인", String.valueOf(fileInputStream.read(data)));
                 fileOutputStream.write(data);
             }
             fileInputStream.close();
@@ -148,6 +167,7 @@ public class WavClass {
     }
     public void startRecording(){
         try{
+            Log.d("녹음 시작", "녹음 시작 확인");
             recorder = new AudioRecord(MediaRecorder.AudioSource.MIC,sampleRate,channel,audioEncoding, bufferSize);
             int status = recorder.getState();
             if(status == 1) {
@@ -163,7 +183,9 @@ public class WavClass {
     }
     public String stopRecording(){
         try{
+            Log.d("녹음 종료", "녹음 종료 확인");
             if(recorder != null) {
+                Log.d("녹음 종료 2", "녹음 종료 확인 2");
                 isRecording = false;
                 int status = recorder.getState();
                 if (status == 1) {
@@ -174,6 +196,7 @@ public class WavClass {
                 createWavFile(getPath(tempRawFile), getPath(tempWavFile));
 
                 targetFilePath = getPath(tempWavFile);
+
 
             }
         }
