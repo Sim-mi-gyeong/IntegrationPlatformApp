@@ -1,261 +1,198 @@
 package com.me.screenrecordertest;
 
-import androidx.annotation.NonNull;
+import android.Manifest;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaScannerConnection;
+import android.media.projection.MediaProjectionManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
+
+import androidx.annotation.DrawableRes;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import android.Manifest;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.hardware.display.DisplayManager;
-import android.hardware.display.VirtualDisplay;
-import android.media.MediaRecorder;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.util.DisplayMetrics;
-import android.util.SparseIntArray;
-import android.view.Surface;
-import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.Toast;
-import android.widget.ToggleButton;
-import android.widget.VideoView;
+import com.hbisoft.hbrecorder.HBRecorder;
+import com.hbisoft.hbrecorder.HBRecorderListener;
 
-import com.google.android.material.snackbar.Snackbar;
-
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements HBRecorderListener {
 
-    private static final int REQUEST_CODE = 1000;
-    private static final int REQUEST_PERMISSION = 1001;
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-
-    private MediaRecorder mediaRecorder;
-    private MediaProjectionManager mediaProjectionManager;
-    private MediaProjection mediaProjection;
-    private VirtualDisplay virtualDisplay;
-    private MediaProjectionCallback mediaProjectionCallback;
-
-    private int mScreenDensity;
-    private static final int DISPLAY_WIDTH = 720;
-    private static final int DISPLAY_HEIGHT = 1280;
-
-    static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 180);
-        ORIENTATIONS.append(Surface.ROTATION_270, 270);
-    }
-
-    private LinearLayout rootLayout;
-    private ToggleButton toggleButton;
-    private VideoView videoView;
-    private String videoUri = "";
-
-
+    private static final int SCREEN_RECORD_REQUEST_CODE = 100;
+    private static final int PERMISSION_REQ_ID_RECORD_AUDIO = 101;
+    private static final int PERMISSION_REQ_ID_WRITE_EXTERNAL_STORAGE = 102;
+    HBRecorder hbRecorder;
+    Button btnStart,btnStop;
+    boolean hasPermissions;
+    ContentValues contentValues;
+    ContentResolver resolver;
+    Uri mUri;
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        hbRecorder = new HBRecorder(this, this);
+        btnStart = findViewById(R.id.startBtn);
+        btnStop = findViewById(R.id.stopBtn);
+        hbRecorder.setVideoEncoder("H264");
 
-        DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        mScreenDensity = metrics.densityDpi;
+        btnStart.setOnClickListener(new View.OnClickListener() {
 
-        mediaRecorder = new MediaRecorder();
-        mediaProjectionManager = (MediaProjectionManager)getSystemService(Context.MEDIA_PROJECTION_SERVICE);
-
-        // View
-        videoView = findViewById(R.id.videoView);
-        toggleButton = findViewById(R.id.toggleBtn);
-        rootLayout = findViewById(R.id.rootLayout);
-
-        // Event
-        toggleButton.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onClick(View v) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                 + ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        || ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.RECORD_AUDIO))  {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    //first check if permissions was granted
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO, PERMISSION_REQ_ID_RECORD_AUDIO) && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQ_ID_WRITE_EXTERNAL_STORAGE)) {
+                        hasPermissions = true;
+                    }
+                    if (hasPermissions) {
 
-                        toggleButton.setChecked(false);
-//                        Toast.makeText(MainActivity.this, "PERMISSION DENIED", Toast.LENGTH_SHORT).show();
-                        Snackbar.make(rootLayout, "Permissions", Snackbar.LENGTH_INDEFINITE)
-                                .setAction("ENABLE", new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        ActivityCompat.requestPermissions(MainActivity.this,
-                                                new String[]{
-                                                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                                        Manifest.permission.RECORD_AUDIO
-                                                }, REQUEST_PERMISSION);
-                                    }
-                                }).show();
+                        startRecordingScreen();
+
                     }
-                    else {
-                        ActivityCompat.requestPermissions(MainActivity.this,
-                                new String[]{
-                                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                        Manifest.permission.RECORD_AUDIO
-                                }, REQUEST_PERMISSION);
-                    }
+                } else {
+                    //showLongToast("This library requires API 21>");
                 }
-                else {
-                    toggleScreenShare(v);
-                }
+            }
+        });
+        btnStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hbRecorder.stopScreenRecording();
             }
         });
     }
 
-    private void toggleScreenShare(View v) {
-        if (toggleButton.isChecked()) {
-            initRecorder();
-            recordScreen();
-        } else {
-            mediaRecorder.stop();
-            mediaRecorder.reset();
-            stopRecordScreen();
+    @Override
+    public void HBRecorderOnStart() {
+        Toast.makeText(this, "Started", Toast.LENGTH_SHORT).show();
+    }
 
-            // Play in Video View
-            videoView.setVisibility(View.VISIBLE);
-            videoView.setVideoURI(Uri.parse(videoUri));
-            videoView.start();
+    @Override
+    public void HBRecorderOnComplete() {
+        Toast.makeText(this, "Completed", Toast.LENGTH_SHORT).show();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            //Update gallery depending on SDK Level
+            if (hbRecorder.wasUriSet()) {
+                updateGalleryUri();
+            }else{
+                refreshGalleryFile();
+            }
         }
     }
 
-    private void initRecorder() {
-        try {
-            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-
-            videoUri = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    + new StringBuilder("/EDMTRecord_").append(new SimpleDateFormat("dd-MM-yyyy-hh_mm_ss")
-            .format(new Date())).append(".mp4").toString();
-
-            mediaRecorder.setOutputFile(videoUri);
-            mediaRecorder.setVideoSize(DISPLAY_WIDTH, DISPLAY_HEIGHT);
-            mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-            mediaRecorder.setVideoEncodingBitRate(512*1000);
-            mediaRecorder.setVideoFrameRate(30);
-//            mediaRecorder.setVideoFrameRate(50);
-
-
-
-            int rotation = getWindowManager().getDefaultDisplay().getRotation();
-            int orientation = ORIENTATIONS.get(rotation + 90);
-            mediaRecorder.setOrientationHint(orientation);
-            mediaRecorder.prepare();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void HBRecorderOnError(int errorCode, String reason) {
+        Toast.makeText(this, errorCode+": "+reason, Toast.LENGTH_SHORT).show();
     }
-
-    private void recordScreen() {
-        if (mediaProjection == null) {
-            startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), REQUEST_CODE);
-            return;
-        }
-        virtualDisplay = createVirtualDisplay();
-        mediaRecorder.start();
-    }
-
-    private VirtualDisplay createVirtualDisplay() {
-        return mediaProjection.createVirtualDisplay("MainActivity", DISPLAY_WIDTH, DISPLAY_HEIGHT, mScreenDensity,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                mediaRecorder.getSurface(), null, null);
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void startRecordingScreen() {
+        MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        Intent permissionIntent = mediaProjectionManager != null ? mediaProjectionManager.createScreenCaptureIntent() : null;
+        startActivityForResult(permissionIntent, SCREEN_RECORD_REQUEST_CODE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQUEST_CODE) {
-            Toast.makeText(this, "Unk Error", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (resultCode != RESULT_OK) {
-            Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
-            toggleButton.setChecked(false);
-            return;
-        }
+        if (requestCode == SCREEN_RECORD_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                //Start screen recording
+                hbRecorder.startScreenRecording(data, resultCode, this);
 
-        mediaProjectionCallback = new MediaProjectionCallback();
-        mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data);
-        mediaProjection.registerCallback(mediaProjectionCallback, null);
-        virtualDisplay = createVirtualDisplay();
-        mediaRecorder.start();
-
-    }
-
-    private void stopRecordScreen() {
-        if (virtualDisplay == null) {
-            return;
-        }
-        virtualDisplay.release();
-        destroyMediaProjection();
-    }
-
-    private void destroyMediaProjection() {
-        if (mediaProjection != null) {
-            mediaProjection.unregisterCallback(mediaProjectionCallback);
-            mediaProjection.stop();
-            mediaProjection = null;
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case REQUEST_PERMISSION: {
-                if ((grantResults.length > 0) && (grantResults[0] + grantResults[1] == PackageManager.PERMISSION_GRANTED)) {
-                    toggleScreenShare(toggleButton);
-                }
-                else {
-                    toggleButton.setChecked(false);
-                    Snackbar.make(rootLayout, "Permissions", Snackbar.LENGTH_INDEFINITE)
-                            .setAction("ENABLE", new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    ActivityCompat.requestPermissions(MainActivity.this,
-                                            new String[]{
-                                                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                                    Manifest.permission.RECORD_AUDIO
-                                            }, REQUEST_PERMISSION);
-                                }
-                            }).show();
-                }
-                return;
             }
         }
     }
+    //For Android 10> we will pass a Uri to HBRecorder
+    //This is not necessary - You can still use getExternalStoragePublicDirectory
+    //But then you will have to add android:requestLegacyExternalStorage="true" in your Manifest
+    //IT IS IMPORTANT TO SET THE FILE NAME THE SAME AS THE NAME YOU USE FOR TITLE AND DISPLAY_NAME
 
-    private class MediaProjectionCallback extends MediaProjection.Callback {
-
-        @Override
-        public void onStop() {
-            if (toggleButton.isChecked()) {
-                toggleButton.setChecked(false);
-                mediaRecorder.stop();
-                mediaRecorder.reset();
-            }
-            mediaProjection = null;
-            stopRecordScreen();
-            super.onStop();
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private void setOutputPath() {
+        String filename = generateFileName();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            resolver = getContentResolver();
+            contentValues = new ContentValues();
+            contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, "SpeedTest/" + "SpeedTest");
+            contentValues.put(MediaStore.Video.Media.TITLE, filename);
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4");
+            mUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+            //FILE NAME SHOULD BE THE SAME
+            hbRecorder.setFileName(filename);
+            hbRecorder.setOutputUri(mUri);
+        }else{
+            createFolder();
+            hbRecorder.setOutputPath(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES) +"/HBRecorder");
         }
-
+    }
+    //Check if permissions was granted
+    private boolean checkSelfPermission(String permission, int requestCode) {
+        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{permission}, requestCode);
+            return false;
+        }
+        return true;
+    }
+    private void updateGalleryUri(){
+        contentValues.clear();
+        contentValues.put(MediaStore.Video.Media.IS_PENDING, 0);
+        getContentResolver().update(mUri, contentValues, null, null);
+    }
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private void refreshGalleryFile() {
+        MediaScannerConnection.scanFile(this,
+                new String[]{hbRecorder.getFilePath()}, null,
+                new MediaScannerConnection.OnScanCompletedListener() {
+                    public void onScanCompleted(String path, Uri uri) {
+                        Log.i("ExternalStorage", "Scanned " + path + ":");
+                        Log.i("ExternalStorage", "-> uri=" + uri);
+                    }
+                });
+    }
+    //Generate a timestamp to be used as a file name
+    private String generateFileName() {
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.getDefault());
+        Date curDate = new Date(System.currentTimeMillis());
+        return formatter.format(curDate).replace(" ", "");
+    }
+    //drawable to byte[]
+    private byte[] drawable2ByteArray(@DrawableRes int drawableId) {
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), drawableId);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        icon.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        return stream.toByteArray();
+    }
+    //Create Folder
+    //Only call this on Android 9 and lower (getExternalStoragePublicDirectory is deprecated)
+    //This can still be used on Android 10> but you will have to add android:requestLegacyExternalStorage="true" in your Manifest
+    private void createFolder() {
+        File f1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), "SpeedTest");
+        if (!f1.exists()) {
+            if (f1.mkdirs()) {
+                Log.i("Folder ", "created");
+            }
+        }
     }
 }

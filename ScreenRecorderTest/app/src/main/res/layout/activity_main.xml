@@ -13,13 +13,34 @@
         android:layout_width="match_parent"
         android:layout_height="400dp"/>
 
-    <ToggleButton
-        android:id="@+id/toggleBtn"
-        android:textOff="Record"
-        android:textOn="Stop"
+<!--    <ToggleButton-->
+<!--        android:id="@+id/toggleBtn"-->
+<!--        android:textOff="Record"-->
+<!--        android:textOn="Stop"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"/>-->
+
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/startBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginRight="60dp"
+            android:text="녹화 시작"/>
+
+        <Button
+            android:id="@+id/stopBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="녹화 종료"/>
 
 
+    </LinearLayout>
 
 </LinearLayout>
